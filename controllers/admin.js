@@ -30,6 +30,7 @@ exports.postAddProduct = (req, res, next) => {
 //get the edit product page
 exports.getEditProduct = (req, res, next) => {
   const editMode = req.query.edit;
+  console.log(editMode);
 
   if (!editMode) {
     return res.redirect("/");
@@ -59,8 +60,9 @@ exports.postEditProducts = (req, res, next) => {
   const updatedPrice = req.body.price;
   const updatedImageUrl = req.body.imageUrl;
   const updatedDesc = req.body.description;
+  const userId = req.user._id
 
-  const product = new Product(updatedTitle, updatedPrice, updatedDesc,updatedImageUrl, prodId);
+  const product = new Product(updatedTitle, updatedPrice, updatedDesc,updatedImageUrl,userId, prodId);
  
   product
   .save()

@@ -23,6 +23,12 @@ class Product{
       }, {
         $set : this
       })
+      .then(result => {
+        console.log(result);
+      })
+      .catch(err => {
+        console.log(err);
+      });
 
     }else{
       //Insert a new product

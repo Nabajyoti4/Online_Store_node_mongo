@@ -1,3 +1,107 @@
+const mongoose = require('mongoose');
+
+const Schema = mongoose.Schema;
+
+const userSchema = new Schema({
+    name : {
+        type : String,
+        required: true
+    },
+    email : {
+        type: String,
+        required : true
+    },
+    cart : {
+        items : [{
+            productId : {
+                type : Schema.Types.ObjectId,
+                ref : 'Product',
+                required: true
+            },
+            quantity:{
+                type : Number,
+                required : true
+            }
+        }]
+    }
+});
+
+/**
+ * Add product to user cart
+ * @param {product} product 
+ */
+userSchema.methods.addToCart = function(product){
+        // check for same product in cart with the product id
+    //get the postition of the existing product if found
+
+    const cartProductIndex = this.cart.items.findIndex(cartProductId =>{
+      return cartProductId.productId.toString() === product._id.toString();
+    });
+
+    
+    let newQuantity = 1;
+
+    //copy the cart items from the cart of user
+    const updatedCartItems = [...this.cart.items];
+    
+    // if product exists
+    if(cartProductIndex >= 0){
+      // increase the old product quantity by adding one to the quantity
+      newQuantity = this.cart.items[cartProductIndex].quantity + 1;
+      
+      //update the quantity with the new quantity
+      updatedCartItems[cartProductIndex].quantity = newQuantity;
+    }
+    // if the item is not in the cart
+    else{
+      // push the new  product id and quantity 
+      updatedCartItems.push({
+        productId : product._id,
+        quantity : newQuantity
+      })
+    }
+    
+    // store the new items in the cart
+    const updatedCart = {
+      items : updatedCartItems
+    };
+
+
+    // update the user cart with new 
+    this.cart = updatedCart;
+     return this.save();
+
+}
+
+/**
+ * Remove item from cart
+ * @param {productId} productId 
+ */
+userSchema.methods.removeFromCart = function(productId) {
+    const updatedCartItems = this.cart.items.filter(item => {
+      return item.productId.toString() !== productId.toString();
+    });
+
+    this.cart.items = updatedCartItems;
+
+    return this.save();
+}
+
+/**
+ * clear cart
+ */
+userSchema.methods.clearCart = function() {
+  this.cart = {
+    items : []
+  };
+
+  return this.save();
+}
+
+
+
+module.exports = mongoose.model('User', userSchema);
+
 // const getDb = require('../util/database').getDb;
 // const mongodb = require('mongodb');
 // const { get } = require('../routes/shop');

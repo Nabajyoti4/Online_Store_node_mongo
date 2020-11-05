@@ -1,69 +1,90 @@
-const path = require('path');
-
-const express = require('express');
-const bodyParser = require('body-parser');
+// app requirements
+const path = require("path");
+const express = require("express");
+const bodyParser = require("body-parser");
+const session = require("express-session");
+const MongoDBStore = require("connect-mongodb-session")(session);
+const csrf = require('csurf');
+const flash = require('connect-flash');
 
 //mongodb
-const mongoose = require('mongoose')
-const User = require('./models/user');
+const mongoose = require("mongoose");
+const User = require("./models/user");
 
-const errorController = require('./controllers/error');
+// controllers
+const errorController = require("./controllers/error");
 
+const MONGODB_URI =
+  "mongodb+srv://naba:8474840292@onlinestore.pieao.mongodb.net/shop?retryWrites=true&w=majority";
+
+// express setup
 const app = express();
+const store = MongoDBStore({
+  uri: MONGODB_URI,
+  collection: "sessions",
+});
 
-app.set('view engine', 'ejs');
-app.set('views', 'views');
+// setup csrf
+const csrfProtection = csrf();
 
-const adminRoutes = require('./routes/admin');
-const shopRoutes = require('./routes/shop');
-const authRoutes = require('./routes/auth');
+// template engine
+app.set("view engine", "ejs");
+app.set("views", "views");
 
+// routes models
+const adminRoutes = require("./routes/admin");
+const shopRoutes = require("./routes/shop");
+const authRoutes = require("./routes/auth");
+
+// middlewares
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  session({
+    secret: "my secret",
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+  })
+);
 
-//find a user at the starting of application
-//store it in request
+
+app.use(csrfProtection);
+app.use(flash());
+
+// store User model provided by mongoose insession
 app.use((req, res, next) => {
-  User.findById("5f9ee06682414a25dc4bd369")
-    .then(user => {
+  if (!req.session.user) {
+    return next();
+  }
+  User.findById(req.session.user._id)
+    .then((user) => {
       req.user = user;
       next();
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
     });
-
 });
 
-app.use('/admin', adminRoutes);
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = req.session.isLoggedIn,
+  res.locals.csrfToken = req.csrfToken()
+  next()
+})
+
+// routes
+app.use("/admin", adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
-
 app.use(errorController.get404);
-
 
 //mongo db connection
 mongoose
-.connect('mongodb+srv://naba:8474840292@onlinestore.pieao.mongodb.net/shop?retryWrites=true&w=majority',  
-{useUnifiedTopology: true})
-.then(result =>{
-  User.findOne()
-  .then(user => {
-    if(!user){
-      const user = new User({
-        name : "Naba",
-        email : "sirnaba@gmail.com",
-        cart : {
-          items : []
-        }
-      });
-      user.save();
-    }
+  .connect(MONGODB_URI, { useUnifiedTopology: true })
+  .then((result) => {
+    app.listen(3000);
   })
-
-  app.listen(3000);
-})
-.catch(err => {
-  console.log(err)
-})
-
+  .catch((err) => {
+    console.log(err);
+  });

@@ -250,3 +250,23 @@ form {
     display: none;
   }
 }
+
+
+.pagination {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.pagination a{
+  text-decoration: none;
+  color: green ;
+  padding: .5rem;
+  border : 1px solid green;
+  margin: 0 1rem;
+}
+
+.pagination a:hover,
+.pagination a:active{
+background: green;
+color: white;
+}

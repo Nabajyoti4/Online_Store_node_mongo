@@ -1,5 +1,7 @@
 const Product = require('../models/product')
 const Order = require('../models/order');
+const fs = require('fs');
+const path = require('path');
 
 // get all products for user
 exports.getProducts =  (req, res, next) => {
@@ -120,22 +122,26 @@ exports.postOrder = (req, res, next) => {
       };
     });
 
+   
     const order = new Order({
       user : {
-        name : req.user.email,
+        email : req.user.email,
         userId : req.user
       },
       products : products
     });
 
+
     return order.save();
   })
    .then(result => {
      return req.user.clearCart();
-    }).then(result => {
+    })
+    .then(result => {
       res.redirect('/orders');
     })
     .catch(err => {
+      console.log(err);
       const error  = new Error(err);
       error.httpStatusCode = 500;
       return next(error);
@@ -167,3 +173,17 @@ exports.getCheckout = (req, res, next) => {
 });
 }
 
+//get the invoice page
+exports.getInvoice = (req, res, next) => {
+  const orderId = req.params.orderId;
+  const invoiceName = 'invoice.pdf';
+  const invoicePath = path.join('data', 'invoices', invoiceName);
+
+  fs.readFile(invoicePath, (err, data) => {
+    if(err){
+      return next(err);
+    }
+
+    res.send(data);
+  } );
+}
